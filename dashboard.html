@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CivicEye – Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+  <!-- NAVIGATION -->
+  <nav>
+    <div class="nav-logo">👁️ <span>Civic</span>Eye</div>
+    <ul class="nav-links">
+      <li><a href="index.html"     class="nav-btn">Home</a></li>
+      <li><a href="report.html"    class="nav-btn">Report Issue</a></li>
+      <li><a href="issues.html"    class="nav-btn">All Issues</a></li>
+      <li><a href="map.html"       class="nav-btn">Map View</a></li>
+      <li><a href="dashboard.html" class="nav-btn active">Dashboard</a></li>
+    </ul>
+    <div class="nav-right">
+      <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+    </div>
+  </nav>
+
+  <!-- DASHBOARD -->
+  <div class="dashboard-container">
+
+    <div class="page-header">
+      <h2>📊 Dashboard</h2>
+      <p>Overview of all civic issues in your city.</p>
+    </div>
+
+    <div class="stats-cards">
+      <div class="stat-big-card">
+        <div class="label">Total Issues</div>
+        <div class="value" id="d-total"    style="color:var(--accent)">0</div>
+        <div class="change" style="color:var(--muted)">All time</div>
+      </div>
+      <div class="stat-big-card">
+        <div class="label">Resolved</div>
+        <div class="value" id="d-resolved" style="color:var(--green)">0</div>
+        <div class="change" style="color:var(--green)">✔ Fixed</div>
+      </div>
+      <div class="stat-big-card">
+        <div class="label">In Progress</div>
+        <div class="value" id="d-progress" style="color:var(--yellow)">0</div>
+        <div class="change" style="color:var(--yellow)">⏳ Working</div>
+      </div>
+      <div class="stat-big-card">
+        <div class="label">Pending</div>
+        <div class="value" id="d-pending"  style="color:var(--accent2)">0</div>
+        <div class="change" style="color:var(--muted)">Awaiting</div>
+      </div>
+    </div>
+
+    <div class="charts-row">
+      <div class="chart-card">
+        <h3>Issues by Category</h3>
+        <canvas id="catChart"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>Issues by Status</h3>
+        <canvas id="statusChart"></canvas>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-card-header">🔥 Top Voted Issues</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Title</th><th>Category</th><th>Location</th><th>Votes</th><th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="topIssuesTable"></tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- MOBILE NAV -->
+  <div class="mobile-nav">
+    <a href="index.html"     class="mnav-btn"><span class="m-icon">🏠</span>Home</a>
+    <a href="report.html"    class="mnav-btn"><span class="m-icon">📝</span>Report</a>
+    <a href="issues.html"    class="mnav-btn"><span class="m-icon">📋</span>Issues</a>
+    <a href="map.html"       class="mnav-btn"><span class="m-icon">🗺️</span>Map</a>
+    <a href="dashboard.html" class="mnav-btn active"><span class="m-icon">📊</span>Stats</a>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="app.js"></script>
+  <script>
+    renderDashboard();
+  </script>
+</body>
+</html>

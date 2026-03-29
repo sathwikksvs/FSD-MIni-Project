@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CivicEye – Home</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+  <!-- NAVIGATION -->
+  <nav>
+    <div class="nav-logo">👁️ <span>Civic</span>Eye</div>
+    <ul class="nav-links">
+      <li><a href="index.html"     class="nav-btn active">Home</a></li>
+      <li><a href="report.html"    class="nav-btn">Report Issue</a></li>
+      <li><a href="issues.html"    class="nav-btn">All Issues</a></li>
+      <li><a href="map.html"       class="nav-btn">Map View</a></li>
+      <li><a href="dashboard.html" class="nav-btn">Dashboard</a></li>
+    </ul>
+    <div class="nav-right">
+      <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-badge">🏙️ Smart City Initiative</div>
+    <h1>Report. Track. <span class="highlight">Resolve.</span></h1>
+    <p>CivicEye connects citizens to civic authorities. Report potholes, garbage, broken streetlights and more — and track when they get fixed.</p>
+    <div class="hero-buttons">
+      <a href="report.html" class="btn-primary">📝 Report an Issue</a>
+      <a href="issues.html" class="btn-secondary">📋 Browse Issues</a>
+    </div>
+  </div>
+
+
+  <!-- MOBILE NAV -->
+  <div class="mobile-nav">
+    <a href="index.html"     class="mnav-btn active"><span class="m-icon">🏠</span>Home</a>
+    <a href="report.html"    class="mnav-btn"><span class="m-icon">📝</span>Report</a>
+    <a href="issues.html"    class="mnav-btn"><span class="m-icon">📋</span>Issues</a>
+    <a href="map.html"       class="mnav-btn"><span class="m-icon">🗺️</span>Map</a>
+    <a href="dashboard.html" class="mnav-btn"><span class="m-icon">📊</span>Stats</a>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    // Load stats and category grid on home page
+    updateHomeStats();
+  </script>
+</body>
+</html>

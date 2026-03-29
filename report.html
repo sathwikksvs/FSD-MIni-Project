@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CivicEye – Report Issue</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+  <!-- NAVIGATION -->
+  <nav>
+    <div class="nav-logo">👁️ <span>Civic</span>Eye</div>
+    <ul class="nav-links">
+      <li><a href="index.html"     class="nav-btn">Home</a></li>
+      <li><a href="report.html"    class="nav-btn active">Report Issue</a></li>
+      <li><a href="issues.html"    class="nav-btn">All Issues</a></li>
+      <li><a href="map.html"       class="nav-btn">Map View</a></li>
+      <li><a href="dashboard.html" class="nav-btn">Dashboard</a></li>
+    </ul>
+    <div class="nav-right">
+      <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+    </div>
+  </nav>
+
+  <!-- REPORT FORM -->
+  <div class="report-container">
+
+    <div class="page-header">
+      <h2>📝 Report an Issue</h2>
+      <p>Fill in the details below to submit a civic complaint.</p>
+    </div>
+
+    <div class="form-group">
+      <label>Issue Title *</label>
+      <input type="text" id="issueTitle" placeholder="e.g. Broken Streetlight on MG Road" />
+    </div>
+
+    <div class="form-group">
+  <label>Category *</label>
+  <select id="issueCategory" onchange="handleCategoryChange()">
+    <option value="">Select a category</option>
+    <option value="Road">🛣️ Road Issues</option>
+    <option value="Garbage">🗑️ Garbage</option>
+    <option value="Water">💧 Water Supply</option>
+    <option value="Electricity">💡 Electricity</option>
+    <option value="Safety">🚨 Public Safety</option>
+    <option value="Environment">🌳 Environment</option>
+    <option value="Other">✏️ Other (specify below)</option>
+  </select>
+
+  <!-- This box only appears when "Other" is selected -->
+  <div id="otherCategoryBox" style="display:none; margin-top:10px;">
+    <input
+      type="text"
+      id="otherCategoryInput"
+      placeholder="e.g. Noise Pollution, Stray Animals, Illegal Construction..."
+      maxlength="40"
+    />
+    <div class="other-hint">📝 Describe your category in a few words</div>
+  </div>
+</div>
+
+    
+
+    <div class="form-group">
+      <label>Location *</label>
+      <input type="text" id="issueLocation" placeholder="e.g. MG Road, Near Post Office" />
+    </div>
+
+    <div class="form-group">
+      <label>Description</label>
+      <textarea id="issueDesc" placeholder="Describe the issue in detail..."></textarea>
+    </div>
+
+    <div class="form-group">
+      <label>Priority</label>
+      <div class="priority-row">
+        <div class="priority-btn low"    onclick="selectPriority('Low')"   >🟢 Low</div>
+        <div class="priority-btn medium" onclick="selectPriority('Medium')">🟡 Medium</div>
+        <div class="priority-btn high"   onclick="selectPriority('High')"  >🔴 High</div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Photo (Optional)</label>
+      <div class="upload-area" onclick="document.getElementById('imageInput').click()">
+        <div class="upload-icon">📷</div>
+        <p>Click to upload a photo</p>
+        <p style="font-size:0.8rem;margin-top:4px;">JPG, PNG up to 5MB</p>
+      </div>
+      <input type="file" id="imageInput" accept="image/*" onchange="previewImage(event)" />
+      <div id="imagePreview">
+        <img id="previewImg" src="" alt="Preview"/>
+      </div>
+    </div>
+
+    <button class="btn-submit" onclick="submitIssue()">Submit Report 🚀</button>
+    <div id="successMsg">✅ Report submitted! Redirecting to all issues...</div>
+
+  </div>
+
+  <!-- MOBILE NAV -->
+  <div class="mobile-nav">
+    <a href="index.html"     class="mnav-btn"><span class="m-icon">🏠</span>Home</a>
+    <a href="report.html"    class="mnav-btn active"><span class="m-icon">📝</span>Report</a>
+    <a href="issues.html"    class="mnav-btn"><span class="m-icon">📋</span>Issues</a>
+    <a href="map.html"       class="mnav-btn"><span class="m-icon">🗺️</span>Map</a>
+    <a href="dashboard.html" class="mnav-btn"><span class="m-icon">📊</span>Stats</a>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    // After submit, redirect to issues.html instead of switching pages
+    function submitIssue() {
+  var title    = document.getElementById('issueTitle').value.trim();
+  var category = document.getElementById('issueCategory').value;
+  var location = document.getElementById('issueLocation').value.trim();
+  var desc     = document.getElementById('issueDesc').value.trim();
+
+  // ── If "Other" was chosen, read the custom text box instead ──
+  if (category === 'Other') {
+    var custom = document.getElementById('otherCategoryInput').value.trim();
+    if (!custom) {
+      alert('⚠️ Please describe your category in the text box below the dropdown!');
+      return;
+    }
+    category = custom; // use the custom text as the category name
+  }
+
+  if (!title || !category || !location) {
+    alert('⚠️ Please fill in Title, Category, and Location!');
+    return;
+  }
+
+  var stored = JSON.parse(localStorage.getItem('civicIssues') || '[]');
+  var newIssue = {
+    id:          Date.now(),
+    title:       title,
+    category:    category,
+    location:    location,
+    description: desc || 'No description provided.',
+    priority:    selectedPriority,
+    status:      'Reported',
+    votes:       0,
+    date:        new Date().toISOString().split('T')[0],
+    lat:         16.55 + (Math.random() - 0.5) * 0.04,
+    lng:         81.52 + (Math.random() - 0.5) * 0.04,
+    voted:       false
+  };
+
+  stored.unshift(newIssue);
+  localStorage.setItem('civicIssues', JSON.stringify(stored));
+
+  document.getElementById('successMsg').style.display = 'block';
+  document.getElementById('issueTitle').value    = '';
+  document.getElementById('issueCategory').value = '';
+  document.getElementById('issueLocation').value = '';
+  document.getElementById('issueDesc').value     = '';
+  document.getElementById('imagePreview').style.display  = 'none';
+  document.getElementById('otherCategoryBox').style.display = 'none';
+
+  setTimeout(function() {
+    window.location.href = 'issues.html';
+  }, 2000);
+}
+  </script>
+</body>
+</html>

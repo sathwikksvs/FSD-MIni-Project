@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CivicEye – All Issues</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+  <!-- NAVIGATION -->
+  <nav>
+    <div class="nav-logo">👁️ <span>Civic</span>Eye</div>
+    <ul class="nav-links">
+      <li><a href="index.html"     class="nav-btn">Home</a></li>
+      <li><a href="report.html"    class="nav-btn">Report Issue</a></li>
+      <li><a href="issues.html"    class="nav-btn active">All Issues</a></li>
+      <li><a href="map.html"       class="nav-btn">Map View</a></li>
+      <li><a href="dashboard.html" class="nav-btn">Dashboard</a></li>
+    </ul>
+    <div class="nav-right">
+      <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+    </div>
+  </nav>
+
+  <!-- ALL ISSUES -->
+  <div class="issues-container">
+
+    <div class="page-header">
+      <h2>📋 All Reported Issues</h2>
+      <p>Browse, vote, and manage civic issues in your area.</p>
+    </div>
+
+    <!-- Search + Filter Bar -->
+    <div class="filter-bar">
+      <input type="text" id="searchInput" placeholder="🔍 Search issues..." oninput="renderIssues()" />
+      <button class="filter-btn active" onclick="setFilter('All')"         id="filter-All"        >All</button>
+      <button class="filter-btn"        onclick="setFilter('Road')"        id="filter-Road"       >🛣️ Road</button>
+      <button class="filter-btn"        onclick="setFilter('Garbage')"     id="filter-Garbage"    >🗑️ Garbage</button>
+      <button class="filter-btn"        onclick="setFilter('Water')"       id="filter-Water"      >💧 Water</button>
+      <button class="filter-btn"        onclick="setFilter('Electricity')" id="filter-Electricity">💡 Electricity</button>
+      <button class="filter-btn"        onclick="setFilter('Safety')"      id="filter-Safety"     >🚨 Safety</button>
+      <button class="filter-btn"        onclick="setFilter('Environment')" id="filter-Environment">🌳 Environment</button>
+    </div>
+
+    <!-- Issue cards go here -->
+    <div class="issues-grid" id="issuesGrid"></div>
+
+  </div>
+
+  <!-- ── DELETE CONFIRMATION POPUP ──
+       This box appears when user clicks delete.
+       It asks "Are you sure?" before actually deleting. -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal-box">
+      <div class="modal-icon">🗑️</div>
+      <h3 class="modal-title">Delete This Issue?</h3>
+      <p class="modal-msg">This action cannot be undone. The issue will be permanently removed.</p>
+      <div class="modal-buttons">
+        <button class="modal-cancel" onclick="closeModal()">Cancel</button>
+        <button class="modal-confirm" onclick="confirmDelete()">Yes, Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MOBILE NAV -->
+  <div class="mobile-nav">
+    <a href="index.html"     class="mnav-btn"><span class="m-icon">🏠</span>Home</a>
+    <a href="report.html"    class="mnav-btn"><span class="m-icon">📝</span>Report</a>
+    <a href="issues.html"    class="mnav-btn active"><span class="m-icon">📋</span>Issues</a>
+    <a href="map.html"       class="mnav-btn"><span class="m-icon">🗺️</span>Map</a>
+    <a href="dashboard.html" class="mnav-btn"><span class="m-icon">📊</span>Stats</a>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    renderIssues();
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CivicEye – Map View</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+  <!-- NAVIGATION -->
+  <nav>
+    <div class="nav-logo">👁️ <span>Civic</span>Eye</div>
+    <ul class="nav-links">
+      <li><a href="index.html"     class="nav-btn">Home</a></li>
+      <li><a href="report.html"    class="nav-btn">Report Issue</a></li>
+      <li><a href="issues.html"    class="nav-btn">All Issues</a></li>
+      <li><a href="map.html"       class="nav-btn active">Map View</a></li>
+      <li><a href="dashboard.html" class="nav-btn">Dashboard</a></li>
+    </ul>
+    <div class="nav-right">
+      <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+    </div>
+  </nav>
+
+  <!-- MAP -->
+  <div class="map-container">
+    <div class="page-header">
+      <h2>🗺️ Issues Map</h2>
+      <p>Click on a pin to see issue details.</p>
+    </div>
+    <div id="map"></div>
+    <div class="map-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div> Road</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#f97316"></div> Garbage</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#3b82f6"></div> Water</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#eab308"></div> Electricity</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#8b5cf6"></div> Safety</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#22c55e"></div> Environment</div>
+    </div>
+  </div>
+
+  <!-- MOBILE NAV -->
+  <div class="mobile-nav">
+    <a href="index.html"     class="mnav-btn"><span class="m-icon">🏠</span>Home</a>
+    <a href="report.html"    class="mnav-btn"><span class="m-icon">📝</span>Report</a>
+    <a href="issues.html"    class="mnav-btn"><span class="m-icon">📋</span>Issues</a>
+    <a href="map.html"       class="mnav-btn active"><span class="m-icon">🗺️</span>Map</a>
+    <a href="dashboard.html" class="mnav-btn"><span class="m-icon">📊</span>Stats</a>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="app.js"></script>
+  <script>
+    initMap();
+  </script>
+</body>
+</html>
