@@ -8,66 +8,89 @@ const catInfo = {
   Environment: { color: "#22c55e", icon: "🌳" }
 };
 
-/* ── DEFAULT SAMPLE ISSUES ──
-   Loaded once on first visit into localStorage */
-var defaultIssues = [
-  {
-    id: 1, title: "Large pothole near school",
-    category: "Road", location: "MG Road, Near Govt School",
-    description: "A deep pothole has formed causing accidents. Needs urgent repair.",
-    priority: "High", status: "In Progress", votes: 42,
-    date: "2025-04-10", lat: 16.55, lng: 81.52, voted: false
-  },
-  {
-    id: 2, title: "Garbage dump overflowing",
-    category: "Garbage", location: "Station Road",
-    description: "The garbage bin near Station Road is overflowing for 3 days.",
-    priority: "High", status: "Reported", votes: 38,
-    date: "2025-04-11", lat: 16.545, lng: 81.525, voted: false
-  },
-  {
-    id: 3, title: "Broken streetlight",
-    category: "Electricity", location: "Nehru Street",
-    description: "Streetlight not working for a week. Area is very dark at night.",
-    priority: "Medium", status: "Reported", votes: 25,
-    date: "2025-04-12", lat: 16.558, lng: 81.515, voted: false
-  },
-  {
-    id: 4, title: "Water pipe leakage",
-    category: "Water", location: "Rajaji Nagar",
-    description: "Water leaking from a broken pipe, wasting water for 5 days.",
-    priority: "High", status: "Resolved", votes: 30,
-    date: "2025-04-08", lat: 16.542, lng: 81.534, voted: false
-  },
-  {
-    id: 5, title: "Fallen tree blocking road",
-    category: "Environment", location: "Park Avenue",
-    description: "A large tree fell during last night's storm, blocking half the road.",
-    priority: "High", status: "Resolved", votes: 18,
-    date: "2025-04-09", lat: 16.562, lng: 81.51, voted: false
-  },
-  {
-    id: 6, title: "Illegal dumping near park",
-    category: "Garbage", location: "Gandhi Park",
-    description: "People are illegally dumping construction waste near the park entrance.",
-    priority: "Medium", status: "Reported", votes: 22,
-    date: "2025-04-13", lat: 16.548, lng: 81.528, voted: false
+/* ── API BASE URL ── */
+const API_URL = (window.location.protocol === 'file:')
+  ? 'http://localhost:5000/api/issues'
+  : (window.location.origin + '/api/issues');
+
+/* ══════════════════════════════════════
+   API HELPER FUNCTIONS
+══════════════════════════════════════ */
+
+/* Fetch all issues from the backend */
+async function getIssues() {
+  try {
+    const res = await fetch(API_URL);
+    if (!res.ok) throw new Error('Failed to fetch issues');
+    return await res.json();
+  } catch (err) {
+    console.error('Error fetching issues:', err);
+    showToast('⚠️ Could not reach server. Is the backend running?');
+    return [];
   }
-];
-
-/* ── Load issues from localStorage (or use defaults on first visit) ── */
-if (!localStorage.getItem('civicIssues')) {
-  localStorage.setItem('civicIssues', JSON.stringify(defaultIssues));
 }
 
-/* Returns the issues array from localStorage */
-function getIssues() {
-  return JSON.parse(localStorage.getItem('civicIssues') || '[]');
+/* POST a new issue to the backend (handles FormData with photos or JSON) */
+async function createIssue(issueData) {
+  const isFormData = (typeof FormData !== 'undefined') && (issueData instanceof FormData);
+  const options = {
+    method: 'POST',
+    body: isFormData ? issueData : JSON.stringify(issueData)
+  };
+  if (!isFormData) {
+    options.headers = { 'Content-Type': 'application/json' };
+  }
+  const res = await fetch(API_URL, options);
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Failed to create issue');
+  }
+  return await res.json();
 }
 
-/* Saves the updated issues array back to localStorage */
-function saveIssues(arr) {
-  localStorage.setItem('civicIssues', JSON.stringify(arr));
+/* PATCH an issue's status in MongoDB */
+async function updateIssueStatus(id, newStatus) {
+  const res = await fetch(API_URL + '/' + id + '/status', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status: newStatus })
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Failed to update status');
+  }
+  return await res.json();
+}
+
+/* Change status from UI dropdown */
+async function changeStatus(id, newStatus, selectEl) {
+  try {
+    const updated = await updateIssueStatus(id, newStatus);
+    showToast(`✅ Status updated to "${newStatus}"`);
+
+    // Update the class of the select element to match the new status color
+    if (selectEl) {
+      selectEl.className = 'status-select status-' + newStatus.toLowerCase().replace(' ', '-');
+    }
+  } catch (err) {
+    console.error('Error changing status:', err);
+    showToast('❌ Could not update status: ' + err.message);
+    renderIssues(); // revert dropdown on error
+  }
+}
+
+/* DELETE an issue by MongoDB _id */
+async function deleteIssue(id) {
+  const res = await fetch(API_URL + '/' + id, { method: 'DELETE' });
+  if (!res.ok) throw new Error('Failed to delete issue');
+  return await res.json();
+}
+
+/* POST a vote on an issue */
+async function voteOnIssue(id) {
+  const res = await fetch(API_URL + '/' + id + '/vote', { method: 'POST' });
+  if (!res.ok) throw new Error('Failed to vote');
+  return await res.json();
 }
 
 
@@ -88,33 +111,31 @@ var pendingDeleteId = null;
    DELETE FUNCTIONS
 ══════════════════════════════════════ */
 
-/* Called when user clicks 🗑️ on an issue card.
-   Saves the issue ID and shows the confirm popup. */
+/* Called when user clicks 🗑️ on an issue card. */
 function askDelete(id) {
-  pendingDeleteId = id;             // remember which issue to delete
-  document.getElementById('modalOverlay').classList.add('show'); // show popup
+  pendingDeleteId = id;
+  document.getElementById('modalOverlay').classList.add('show');
 }
 
 /* Called when user clicks "Cancel" in the popup */
 function closeModal() {
-  pendingDeleteId = null;           // forget the ID
-  document.getElementById('modalOverlay').classList.remove('show'); // hide popup
+  pendingDeleteId = null;
+  document.getElementById('modalOverlay').classList.remove('show');
 }
 
 /* Called when user clicks "Yes, Delete" in the popup */
-function confirmDelete() {
-  if (pendingDeleteId === null) return; // safety check
-
-  // Get all issues, filter out the one to delete
-  var issues = getIssues();
-  var updated = issues.filter(function(i) { return i.id !== pendingDeleteId; });
-
-  saveIssues(updated);   // save the updated list
-  closeModal();          // hide the popup
-  renderIssues();        // re-draw the cards without the deleted one
-
-  // Show a small toast notification at the bottom
-  showToast('✅ Issue deleted successfully');
+async function confirmDelete() {
+  if (pendingDeleteId === null) return;
+  try {
+    await deleteIssue(pendingDeleteId);
+    closeModal();
+    showToast('✅ Issue deleted successfully');
+    renderIssues();
+  } catch (err) {
+    closeModal();
+    showToast('❌ Failed to delete issue');
+    console.error(err);
+  }
 }
 
 
@@ -158,13 +179,18 @@ function toggleTheme() {
 /* ══════════════════════════════════════
    HOME PAGE — Stats + Category Grid
 ══════════════════════════════════════ */
-function updateHomeStats() {
-  var issues = getIssues();
+async function updateHomeStats() {
+  var issues = await getIssues();
 
-  document.getElementById('stat-total').textContent    = issues.length;
-  document.getElementById('stat-resolved').textContent = issues.filter(function(i) { return i.status === 'Resolved'; }).length;
-  document.getElementById('stat-progress').textContent = issues.filter(function(i) { return i.status === 'In Progress'; }).length;
-  document.getElementById('stat-pending').textContent  = issues.filter(function(i) { return i.status === 'Reported'; }).length;
+  var totalEl    = document.getElementById('stat-total');
+  var resolvedEl = document.getElementById('stat-resolved');
+  var progressEl = document.getElementById('stat-progress');
+  var pendingEl  = document.getElementById('stat-pending');
+
+  if (totalEl)    totalEl.textContent    = issues.length;
+  if (resolvedEl) resolvedEl.textContent = issues.filter(function(i) { return i.status === 'Resolved'; }).length;
+  if (progressEl) progressEl.textContent = issues.filter(function(i) { return i.status === 'In Progress'; }).length;
+  if (pendingEl)  pendingEl.textContent  = issues.filter(function(i) { return i.status === 'Reported'; }).length;
 
   var grid = document.getElementById('catGrid');
   if (!grid) return;
@@ -233,8 +259,8 @@ function setFilter(f) {
    This is the main function that builds
    all the issue cards on screen.
 ══════════════════════════════════════ */
-function renderIssues() {
-  var issues = getIssues();
+async function renderIssues() {
+  var issues = await getIssues();
 
   /* Read ?cat=Road from URL if coming from home page */
   var params   = new URLSearchParams(window.location.search);
@@ -254,9 +280,9 @@ function renderIssues() {
 
   var filtered = issues.filter(function(issue) {
     var matchCat    = (currentFilter === 'All') || (issue.category === currentFilter);
-    var matchSearch = issue.title.toLowerCase().includes(search)    ||
-                      issue.location.toLowerCase().includes(search) ||
-                      issue.description.toLowerCase().includes(search);
+    var matchSearch = (issue.title || '').toLowerCase().includes(search)    ||
+                      (issue.location || '').toLowerCase().includes(search) ||
+                      (issue.description || '').toLowerCase().includes(search);
     return matchCat && matchSearch;
   });
 
@@ -271,6 +297,8 @@ function renderIssues() {
 
   filtered.forEach(function(issue) {
     var info = catInfo[issue.category] || { color: '#888', icon: '📌' };
+    /* MongoDB uses _id */
+    var id = issue._id;
 
     var dotClass = 'p-medium';
     if (issue.priority === 'High') dotClass = 'p-high';
@@ -280,15 +308,36 @@ function renderIssues() {
     if (issue.status === 'In Progress') statusClass = 'status-progress';
     if (issue.status === 'Resolved')    statusClass = 'status-resolved';
 
+    var dateStr = issue.date ? issue.date.split('T')[0] : 'N/A';
+
+    var imageMarkup = '';
+    if (issue.imageUrl) {
+      imageMarkup =
+        '<div class="issue-card-media" onclick="openImageModal(\'' + issue.imageUrl + '\', \'' + (issue.title || '').replace(/'/g, "\\'") + '\')">' +
+          '<img src="' + issue.imageUrl + '" alt="' + (issue.title || '') + '" class="issue-card-img" onerror="this.parentElement.style.display=\'none\'" />' +
+          '<div class="img-zoom-hint">🔍 View Photo</div>' +
+        '</div>';
+    }
+
+    var statusSelectMarkup =
+      '<div class="status-select-wrapper">' +
+        '<select class="status-select ' + statusClass + '" onchange="changeStatus(\'' + id + '\', this.value, this)" title="Change issue status">' +
+          '<option value="Reported"'    + (issue.status === 'Reported'    ? ' selected' : '') + '>🟡 Reported</option>' +
+          '<option value="In Progress"' + (issue.status === 'In Progress' ? ' selected' : '') + '>🔵 In Progress</option>' +
+          '<option value="Resolved"'    + (issue.status === 'Resolved'    ? ' selected' : '') + '>🟢 Resolved</option>' +
+        '</select>' +
+      '</div>';
+
     grid.innerHTML +=
-      '<div class="issue-card" id="card-' + issue.id + '">' +
+      '<div class="issue-card" id="card-' + id + '">' +
         '<div class="issue-card-bar" style="background:' + info.color + '"></div>' +
+        imageMarkup +
         '<div class="issue-card-body">' +
 
-          /* Top row: category tag + status badge */
+          /* Top row: category tag + interactive status selector */
           '<div class="issue-card-top">' +
             '<div class="issue-category-tag">' + info.icon + ' ' + issue.category + '</div>' +
-            '<div class="issue-status ' + statusClass + '">' + issue.status + '</div>' +
+            statusSelectMarkup +
           '</div>' +
 
           /* Issue info */
@@ -299,17 +348,16 @@ function renderIssues() {
           /* Footer: vote button + priority/date + DELETE button */
           '<div class="issue-footer">' +
 
-            '<button class="vote-btn ' + (issue.voted ? 'voted' : '') + '" onclick="vote(' + issue.id + ')">' +
-              '👍 <span id="vote-' + issue.id + '">' + issue.votes + '</span> votes' +
+            '<button class="vote-btn" id="vote-btn-' + id + '" onclick="vote(\'' + id + '\')">' +
+              '👍 <span id="vote-' + id + '">' + issue.votes + '</span> votes' +
             '</button>' +
 
             '<div class="issue-date">' +
               '<span class="priority-dot ' + dotClass + '"></span>' +
-              issue.priority + ' · ' + issue.date +
+              issue.priority + ' · ' + dateStr +
             '</div>' +
 
-            /* 🗑️ Delete button — calls askDelete() which shows confirmation popup */
-            '<button class="delete-btn" onclick="askDelete(' + issue.id + ')" title="Delete this issue">' +
+            '<button class="delete-btn" onclick="askDelete(\'' + id + '\')" title="Delete this issue">' +
               '🗑️ Delete' +
             '</button>' +
 
@@ -319,26 +367,36 @@ function renderIssues() {
   });
 }
 
+/* ══════════════════════════════════════
+   IMAGE LIGHTBOX MODAL
+══════════════════════════════════════ */
+function openImageModal(imgSrc, title) {
+  var modal = document.getElementById('imageLightboxModal');
+  if (!modal) return;
+  var img = document.getElementById('lightboxImg');
+  var titleEl = document.getElementById('lightboxTitle');
+  if (img) img.src = imgSrc;
+  if (titleEl) titleEl.textContent = title || 'Issue Photo';
+  modal.classList.add('show');
+}
+
+function closeImageModal() {
+  var modal = document.getElementById('imageLightboxModal');
+  if (modal) modal.classList.remove('show');
+}
+
 
 /* ══════════════════════════════════════
-   ISSUES PAGE — Vote Toggle
+   ISSUES PAGE — Vote
 ══════════════════════════════════════ */
-function vote(id) {
-  var issues = getIssues();
-  var issue  = issues.find(function(i) { return i.id === id; });
-  if (!issue) return;
-
-  if (issue.voted) { issue.votes--; issue.voted = false; }
-  else             { issue.votes++; issue.voted = true; }
-
-  saveIssues(issues);
-
-  var el = document.getElementById('vote-' + id);
-  if (el) el.textContent = issue.votes;
-  var btn = el ? el.closest('.vote-btn') : null;
-  if (btn) {
-    if (issue.voted) btn.classList.add('voted');
-    else             btn.classList.remove('voted');
+async function vote(id) {
+  try {
+    var updated = await voteOnIssue(id);
+    var el = document.getElementById('vote-' + id);
+    if (el) el.textContent = updated.votes;
+  } catch (err) {
+    showToast('❌ Could not vote. Try again.');
+    console.error(err);
   }
 }
 
@@ -346,7 +404,7 @@ function vote(id) {
 /* ══════════════════════════════════════
    MAP PAGE — Leaflet Map
 ══════════════════════════════════════ */
-function initMap() {
+async function initMap() {
   if (leafletMap) { leafletMap.invalidateSize(); return; }
 
   leafletMap = L.map('map').setView([16.55, 81.52], 13);
@@ -355,14 +413,21 @@ function initMap() {
     attribution: '© OpenStreetMap contributors'
   }).addTo(leafletMap);
 
-  var issues = getIssues();
+  var issues = await getIssues();
   issues.forEach(function(issue) {
+    if (!issue.lat || !issue.lng) return;
     var info   = catInfo[issue.category] || { color: '#888', icon: '📌' };
     var marker = L.circleMarker([issue.lat, issue.lng], {
       radius: 10, fillColor: info.color,
       color: '#fff', weight: 2, opacity: 1, fillOpacity: 0.85
     });
+
+    var imgHtml = issue.imageUrl 
+      ? '<img src="' + issue.imageUrl + '" style="width:100%;max-height:120px;object-fit:cover;border-radius:6px;margin:6px 0;" /><br>' 
+      : '';
+
     marker.bindPopup(
+      imgHtml +
       '<b>' + issue.title + '</b><br>' +
       '📍 ' + issue.location + '<br>' +
       info.icon + ' ' + issue.category + '<br>' +
@@ -377,52 +442,64 @@ function initMap() {
 /* ══════════════════════════════════════
    DASHBOARD PAGE — Charts + Table
 ══════════════════════════════════════ */
-function renderDashboard() {
-  var issues = getIssues();
+async function renderDashboard() {
+  var issues = await getIssues();
 
-  document.getElementById('d-total').textContent    = issues.length;
-  document.getElementById('d-resolved').textContent = issues.filter(function(i) { return i.status === 'Resolved'; }).length;
-  document.getElementById('d-progress').textContent = issues.filter(function(i) { return i.status === 'In Progress'; }).length;
-  document.getElementById('d-pending').textContent  = issues.filter(function(i) { return i.status === 'Reported'; }).length;
+  var totalEl    = document.getElementById('d-total');
+  var resolvedEl = document.getElementById('d-resolved');
+  var progressEl = document.getElementById('d-progress');
+  var pendingEl  = document.getElementById('d-pending');
+
+  if (totalEl)    totalEl.textContent    = issues.length;
+  if (resolvedEl) resolvedEl.textContent = issues.filter(function(i) { return i.status === 'Resolved'; }).length;
+  if (progressEl) progressEl.textContent = issues.filter(function(i) { return i.status === 'In Progress'; }).length;
+  if (pendingEl)  pendingEl.textContent  = issues.filter(function(i) { return i.status === 'Reported'; }).length;
+
+  var catCanvas = document.getElementById('catChart');
+  if (!catCanvas) return;
 
   var catLabels = Object.keys(catInfo);
   var catCounts = catLabels.map(function(c) { return issues.filter(function(i) { return i.category === c; }).length; });
   var catColors = catLabels.map(function(c) { return catInfo[c].color; });
 
   if (catChartInstance) catChartInstance.destroy();
-  catChartInstance = new Chart(document.getElementById('catChart'), {
+  catChartInstance = new Chart(catCanvas, {
     type: 'doughnut',
     data: { labels: catLabels, datasets: [{ data: catCounts, backgroundColor: catColors, borderWidth: 2 }] },
     options: { plugins: { legend: { labels: { color: '#e8eaf0' } } } }
   });
 
-  if (statusChartInstance) statusChartInstance.destroy();
-  statusChartInstance = new Chart(document.getElementById('statusChart'), {
-    type: 'bar',
-    data: {
-      labels: ['Reported', 'In Progress', 'Resolved'],
-      datasets: [{
-        label: 'Issues',
-        data: [
-          issues.filter(function(i) { return i.status === 'Reported'; }).length,
-          issues.filter(function(i) { return i.status === 'In Progress'; }).length,
-          issues.filter(function(i) { return i.status === 'Resolved'; }).length
-        ],
-        backgroundColor: ['#3b82f6', '#eab308', '#22c55e'],
-        borderRadius: 6
-      }]
-    },
-    options: {
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { ticks: { color: '#8892a4' }, grid: { color: '#2a3045' } },
-        y: { ticks: { color: '#8892a4' }, grid: { color: '#2a3045' } }
+  var statusCanvas = document.getElementById('statusChart');
+  if (statusCanvas) {
+    if (statusChartInstance) statusChartInstance.destroy();
+    statusChartInstance = new Chart(statusCanvas, {
+      type: 'bar',
+      data: {
+        labels: ['Reported', 'In Progress', 'Resolved'],
+        datasets: [{
+          label: 'Issues',
+          data: [
+            issues.filter(function(i) { return i.status === 'Reported'; }).length,
+            issues.filter(function(i) { return i.status === 'In Progress'; }).length,
+            issues.filter(function(i) { return i.status === 'Resolved'; }).length
+          ],
+          backgroundColor: ['#3b82f6', '#eab308', '#22c55e'],
+          borderRadius: 6
+        }]
+      },
+      options: {
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: '#8892a4' }, grid: { color: '#2a3045' } },
+          y: { ticks: { color: '#8892a4' }, grid: { color: '#2a3045' } }
+        }
       }
-    }
-  });
+    });
+  }
 
   var sorted = issues.slice().sort(function(a, b) { return b.votes - a.votes; }).slice(0, 5);
   var tbody  = document.getElementById('topIssuesTable');
+  if (!tbody) return;
   tbody.innerHTML = '';
   sorted.forEach(function(issue) {
     var statusClass = 'status-reported';

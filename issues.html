@@ -64,6 +64,17 @@
     </div>
   </div>
 
+  <!-- ── PHOTO LIGHTBOX MODAL ── -->
+  <div class="modal-overlay" id="imageLightboxModal" onclick="closeImageModal()">
+    <div class="lightbox-box" onclick="event.stopPropagation()">
+      <div class="lightbox-header">
+        <span id="lightboxTitle" class="lightbox-title">Issue Photo</span>
+        <button class="lightbox-close" onclick="closeImageModal()">✕</button>
+      </div>
+      <img id="lightboxImg" src="" alt="Enlarged issue photo" class="lightbox-img" />
+    </div>
+  </div>
+
   <!-- MOBILE NAV -->
   <div class="mobile-nav">
     <a href="index.html"     class="mnav-btn"><span class="m-icon">🏠</span>Home</a>

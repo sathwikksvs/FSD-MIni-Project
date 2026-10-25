@@ -113,58 +113,72 @@
   <script src="app.js"></script>
   <script>
     // After submit, redirect to issues.html instead of switching pages
-    function submitIssue() {
-  var title    = document.getElementById('issueTitle').value.trim();
-  var category = document.getElementById('issueCategory').value;
-  var location = document.getElementById('issueLocation').value.trim();
-  var desc     = document.getElementById('issueDesc').value.trim();
+    async function submitIssue() {
+      var title    = document.getElementById('issueTitle').value.trim();
+      var category = document.getElementById('issueCategory').value;
+      var location = document.getElementById('issueLocation').value.trim();
+      var desc     = document.getElementById('issueDesc').value.trim();
+      var imageFile = document.getElementById('imageInput').files[0];
+      var submitBtn = document.querySelector('.btn-submit');
 
-  // ── If "Other" was chosen, read the custom text box instead ──
-  if (category === 'Other') {
-    var custom = document.getElementById('otherCategoryInput').value.trim();
-    if (!custom) {
-      alert('⚠️ Please describe your category in the text box below the dropdown!');
-      return;
+      // ── If "Other" was chosen, read the custom text box instead ──
+      if (category === 'Other') {
+        var custom = document.getElementById('otherCategoryInput').value.trim();
+        if (!custom) {
+          alert('⚠️ Please describe your category in the text box below the dropdown!');
+          return;
+        }
+        category = custom; // use the custom text as the category name
+      }
+
+      if (!title || !category || !location) {
+        alert('⚠️ Please fill in Title, Category, and Location!');
+        return;
+      }
+
+      var formData = new FormData();
+      formData.append('title', title);
+      formData.append('category', category);
+      formData.append('location', location);
+      formData.append('description', desc || 'No description provided.');
+      formData.append('priority', selectedPriority);
+      formData.append('status', 'Reported');
+      formData.append('lat', (16.55 + (Math.random() - 0.5) * 0.04).toFixed(5));
+      formData.append('lng', (81.52 + (Math.random() - 0.5) * 0.04).toFixed(5));
+      if (imageFile) {
+        formData.append('image', imageFile);
+      }
+
+      try {
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'Submitting Report... ⏳';
+        }
+
+        await createIssue(formData);
+
+        document.getElementById('successMsg').style.display = 'block';
+        document.getElementById('issueTitle').value    = '';
+        document.getElementById('issueCategory').value = '';
+        document.getElementById('issueLocation').value = '';
+        document.getElementById('issueDesc').value     = '';
+        document.getElementById('imageInput').value    = '';
+        document.getElementById('previewImg').src      = '';
+        document.getElementById('imagePreview').style.display  = 'none';
+        document.getElementById('otherCategoryBox').style.display = 'none';
+
+        setTimeout(function() {
+          window.location.href = 'issues.html';
+        }, 1800);
+      } catch (err) {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Submit Report 🚀';
+        }
+        alert('❌ Failed to submit issue: ' + (err.message || 'Make sure the backend server is running!'));
+        console.error(err);
+      }
     }
-    category = custom; // use the custom text as the category name
-  }
-
-  if (!title || !category || !location) {
-    alert('⚠️ Please fill in Title, Category, and Location!');
-    return;
-  }
-
-  var stored = JSON.parse(localStorage.getItem('civicIssues') || '[]');
-  var newIssue = {
-    id:          Date.now(),
-    title:       title,
-    category:    category,
-    location:    location,
-    description: desc || 'No description provided.',
-    priority:    selectedPriority,
-    status:      'Reported',
-    votes:       0,
-    date:        new Date().toISOString().split('T')[0],
-    lat:         16.55 + (Math.random() - 0.5) * 0.04,
-    lng:         81.52 + (Math.random() - 0.5) * 0.04,
-    voted:       false
-  };
-
-  stored.unshift(newIssue);
-  localStorage.setItem('civicIssues', JSON.stringify(stored));
-
-  document.getElementById('successMsg').style.display = 'block';
-  document.getElementById('issueTitle').value    = '';
-  document.getElementById('issueCategory').value = '';
-  document.getElementById('issueLocation').value = '';
-  document.getElementById('issueDesc').value     = '';
-  document.getElementById('imagePreview').style.display  = 'none';
-  document.getElementById('otherCategoryBox').style.display = 'none';
-
-  setTimeout(function() {
-    window.location.href = 'issues.html';
-  }, 2000);
-}
   </script>
 </body>
 </html>

@@ -35,6 +35,20 @@
     </div>
   </div>
 
+  <!-- LIVE STATS FROM MONGODB -->
+  <div class="stats-row" style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;padding:0 24px 24px;">
+    <div class="stat-card"><div class="stat-num" id="stat-total">…</div><div class="stat-label">Total Issues</div></div>
+    <div class="stat-card"><div class="stat-num" id="stat-resolved" style="color:var(--green)">…</div><div class="stat-label">Resolved</div></div>
+    <div class="stat-card"><div class="stat-num" id="stat-progress" style="color:var(--yellow)">…</div><div class="stat-label">In Progress</div></div>
+    <div class="stat-card"><div class="stat-num" id="stat-pending" style="color:var(--accent2)">…</div><div class="stat-label">Pending</div></div>
+  </div>
+
+  <!-- CATEGORY GRID FROM MONGODB -->
+  <div style="padding:0 24px 40px;">
+    <h3 style="text-align:center;color:var(--muted);font-size:0.85rem;letter-spacing:2px;text-transform:uppercase;margin-bottom:16px;">Browse by Category</h3>
+    <div class="cat-grid" id="catGrid"></div>
+  </div>
+
 
   <!-- MOBILE NAV -->
   <div class="mobile-nav">
