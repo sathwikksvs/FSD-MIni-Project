@@ -1,3 +1,4 @@
+
 /* ── CATEGORY INFO ── */
 const catInfo = {
   Road:        { color: "#ef4444", icon: "🛣️" },
@@ -170,11 +171,29 @@ function showToast(message) {
    TOGGLE THEME
 ══════════════════════════════════════ */
 function toggleTheme() {
-  document.body.classList.toggle('light');
-  var btn = document.querySelector('.theme-toggle');
-  btn.textContent = document.body.classList.contains('light') ? '🌙' : '☀️';
+    var isLight = document.body.classList.contains('light');
+
+    var theme = isLight ? 'dark' : 'light';
+
+    localStorage.setItem('civiceye-theme', theme);
+
+    loadTheme();
+}
+/* LOAD SAVED THEME */
+
+function loadTheme() {
+    var theme = localStorage.getItem('civiceye-theme') || 'dark';
+
+    document.body.classList.toggle('light', theme === 'light');
+
+    var btn = document.querySelector('.theme-toggle');
+
+    if (btn) {
+        btn.textContent = theme === 'light' ? '🌙' : '☀️';
+    }
 }
 
+document.addEventListener('DOMContentLoaded', loadTheme);
 
 /* ══════════════════════════════════════
    HOME PAGE — Stats + Category Grid
