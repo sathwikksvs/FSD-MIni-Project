@@ -1,37 +1,43 @@
 
 const express = require('express');
 const router = express.Router();
-const path = require('path');
 const multer = require('multer');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cloudinary = require('cloudinary').v2;
 const Issue = require('../models/Issue');
 
-// Configure multer storage for issue photos
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, path.join(__dirname, '../uploads'));
-    },
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
-        cb(null, 'issue-' + uniqueSuffix + ext);
+// Cloudinary configuration
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+// Cloudinary photo storage
+const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: 'civiceye',
+        allowed_formats: ['jpg', 'jpeg', 'png', 'webp']
     }
 });
 
+// Allow image files only
 const fileFilter = (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) {
         cb(null, true);
     } else {
-        cb(new Error('Only image files (JPG, PNG, WebP) are allowed!'), false);
+        cb(new Error('Only image files are allowed!'), false);
     }
 };
 
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    limits: { fileSize: 5 * 1024 * 1024 },
     fileFilter: fileFilter
 });
 
-// GET all issues (sorted newest first)
+// GET all issues
 router.get('/', async (req, res) => {
     try {
         const issues = await Issue.find().sort({ createdAt: -1, date: -1 });
@@ -41,26 +47,16 @@ router.get('/', async (req, res) => {
     }
 });
 
-// POST new issue (supports JSON or multipart/form-data with photo upload)
-router.post('/', (req, res, next) => {
-    upload.single('image')(req, res, (err) => {
-        if (err instanceof multer.MulterError) {
-            return res.status(400).json({ message: `Upload error: ${err.message}` });
-        } else if (err) {
-            return res.status(400).json({ message: err.message });
-        }
-        next();
-    });
-}, async (req, res) => {
+// POST new issue
+router.post('/', upload.single('image'), async (req, res) => {
     try {
         const issueData = { ...req.body };
 
-        // If file was uploaded via multer, save its relative URL path
+        // Save permanent Cloudinary URL
         if (req.file) {
-            issueData.imageUrl = `/uploads/${req.file.filename}`;
+            issueData.imageUrl = req.file.path;
         }
 
-        // Parse numerical fields if received via FormData (strings)
         if (issueData.lat) issueData.lat = parseFloat(issueData.lat);
         if (issueData.lng) issueData.lng = parseFloat(issueData.lng);
         if (issueData.votes) issueData.votes = parseInt(issueData.votes, 10);
@@ -106,13 +102,16 @@ router.put('/:id', async (req, res) => {
     }
 });
 
-// QUICK STATUS UPDATE (Reported / In Progress / Resolved)
+// UPDATE status
 router.patch('/:id/status', async (req, res) => {
     try {
         const { status } = req.body;
         const validStatuses = ['Reported', 'In Progress', 'Resolved'];
+
         if (!validStatuses.includes(status)) {
-            return res.status(400).json({ message: `Invalid status. Must be one of: ${validStatuses.join(', ')}` });
+            return res.status(400).json({
+                message: `Invalid status. Must be one of: ${validStatuses.join(', ')}`
+            });
         }
 
         const issue = await Issue.findByIdAndUpdate(
